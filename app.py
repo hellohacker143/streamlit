@@ -6,8 +6,8 @@ import google.generativeai as genai
 # Load environment variables from .env file
 load_dotenv()
 
-# Get the Google API key from environment variable
-api_key = os.getenv("AIzaSyCKXm7O9mov430fAeAe2ympFnRJqIU_csw")
+# Get the Google API key from the environment variable
+api_key = os.getenv("GOOGLE_API_KEY")
 
 # Check if the API key is available
 if not api_key:
@@ -26,7 +26,7 @@ else:
         return response
 
     # Streamlit app setup
-    st.set_page_config(page_title="Generative AI Q&A App")
+    st.set_page_config(page_title="Generative AI Q&A Demo")
     st.header("Generative AI Q&A Application")
 
     # Initialize session state for chat history if not already initialized
