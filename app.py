@@ -1,48 +1,54 @@
-import streamlit as st
 import os
 from dotenv import load_dotenv
+import streamlit as st
 import google.generativeai as genai
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure the API key for Gemini AI (loaded from .env or direct input)
-api_key = os.getenv("GOOGLE_API_KEY", "AIzaSyC3kihcAv8ykakwRbMIuJZECxWCSeuCB24")
-genai.configure(api_key=api_key)
+# Get the Google API key from environment variable
+api_key = os.getenv("AIzaSyCKXm7O9mov430fAeAe2ympFnRJqIU_csw")
 
-# Initialize the model
-model = genai.GenerativeModel("gemini-pro")
-chat = model.start_chat(history=[])
+# Check if the API key is available
+if not api_key:
+    st.error("API key is missing. Please add it to your .env file.")
+else:
+    # Configure the Google Generative AI API
+    genai.configure(api_key=api_key)
 
-# Function to get the response from Gemini API
-def get_gemini_response(question):
-    response = chat.send_message(question, stream=True)
-    return response
+    # Initialize the model
+    model = genai.GenerativeModel("gemini-pro")
+    chat = model.start_chat(history=[])
 
-# Streamlit app configuration
-st.set_page_config(page_title="Gemini Q&A Demo")
-st.header("Gemini LLM Application")
+    # Function to send a message to the Generative AI model and get the response
+    def get_gemini_response(question):
+        response = chat.send_message(question, stream=True)
+        return response
 
-# Initialize session state for chat history if not already initialized
-if 'chat_history' not in st.session_state:
-    st.session_state['chat_history'] = []
+    # Streamlit app setup
+    st.set_page_config(page_title="Generative AI Q&A App")
+    st.header("Generative AI Q&A Application")
 
-# User input field for questions
-input_query = st.text_input("Ask your question:", key="input")
-submit = st.button("Ask the question")
+    # Initialize session state for chat history if not already initialized
+    if 'chat_history' not in st.session_state:
+        st.session_state['chat_history'] = []
 
-# Handle button click and fetch response
-if submit and input_query:
-    response = get_gemini_response(input_query)
-    
-    # Append user input and response to chat history
-    st.session_state['chat_history'].append(("You", input_query))
-    st.subheader("The Response is:")
-    for chunk in response:
-        st.write(chunk.text)
-        st.session_state['chat_history'].append(("Bot", chunk.text))
+    # User input for question
+    input_query = st.text_input("Ask your question:", key="input")
+    submit = st.button("Ask")
 
-# Display the chat history
-st.subheader("Chat History:")
-for role, text in st.session_state['chat_history']:
-    st.write(f"{role}: {text}")
+    # Handle question submission
+    if submit and input_query:
+        response = get_gemini_response(input_query)
+
+        # Add user query and bot response to session state chat history
+        st.session_state['chat_history'].append(("You", input_query))
+        st.subheader("The Response is:")
+        for chunk in response:
+            st.write(chunk.text)
+            st.session_state['chat_history'].append(("Bot", chunk.text))
+
+    # Display the chat history
+    st.subheader("Chat History:")
+    for role, text in st.session_state['chat_history']:
+        st.write(f"{role}: {text}")
