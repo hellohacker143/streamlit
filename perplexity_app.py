@@ -1,187 +1,145 @@
 import streamlit as st
 import requests
 import json
-import re
-from bs4 import BeautifulSoup
+import os
 
-# Set page title
-st.title("Perplexity AI Query App")
+# Set page configuration
+st.set_page_config(page_title="Perplexity Research Tool", page_icon="🔍", layout="wide")
 
-# API configuration
-API_KEY = "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"
-API_URL = "https://api.perplexity.ai/chat/completions"
+# Title and description
+st.title("🔍 Perplexity Research Tool")
+st.markdown("Get comprehensive summaries, website links, and YouTube channel recommendations on any topic.")
 
-# Create text input for user query
-user_query = st.text_input("Enter your query:", placeholder="Type your question here...")
+# API Key input (sidebar)
+st.sidebar.header("Configuration")
+api_key = st.sidebar.text_input(
+    "Enter your Perplexity API Key:",
+    type="password",
+    help="Your API key will not be stored. Get one at https://www.perplexity.ai/settings/api"
+)
 
-# Create submit button
-if st.button("Submit Query"):
-    if user_query:
-        # Show loading spinner while processing
-        with st.spinner("Getting response from Perplexity AI..."):
+# Main content area
+st.header("Enter a Topic")
+topic = st.text_input(
+    "What would you like to research?",
+    placeholder="e.g., artificial intelligence, climate change, quantum computing...",
+    help="Enter any topic you want to learn about"
+)
+
+# Button to trigger the search
+if st.button("🔎 Get Summary & Suggestions", type="primary", use_container_width=True):
+    if not api_key:
+        st.error("⚠️ Please enter your Perplexity API key in the sidebar.")
+    elif not topic:
+        st.error("⚠️ Please enter a topic to research.")
+    else:
+        # Show loading state
+        with st.spinner("🔄 Fetching information from Perplexity AI...")
             try:
-                # Prepare the API request
+                # Perplexity API configuration
+                API_URL = "https://api.perplexity.ai/chat/completions"
                 headers = {
-                    "Authorization": f"Bearer {API_KEY}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json"
                 }
                 
-                payload = {
-                    "model": "sonar",
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": user_query
-                        }
-                    ]
-                }
+                # Request for summary
+                st.subheader("📝 Summary")
+                with st.spinner("Generating summary..."):
+                    summary_payload = {
+                        "model": "sonar",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": f"Provide a comprehensive summary about {topic}. Include key information, recent developments, and important facts."
+                            }
+                        ],
+                        "max_tokens": 1000,
+                        "temperature": 0.7,
+                        "return_citations": True
+                    }
+                    
+                    response = requests.post(API_URL, headers=headers, json=summary_payload)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        summary = data.get("choices", [{}])[0].get("message", {}).get("content", "No summary available.")
+                        st.write(summary)
+                        
+                        # Display citations if available
+                        citations = data.get("citations", [])
+                        if citations:
+                            with st.expander("📚 Sources"):
+                                for i, citation in enumerate(citations, 1):
+                                    st.markdown(f"{i}. [{citation}]({citation})")
+                    else:
+                        st.error(f"Error generating summary: {response.status_code} - {response.text}")
                 
-                # Make the API request
-                response = requests.post(API_URL, headers=headers, json=payload)
+                # Request for website links
+                st.subheader("🌐 Recommended Websites")
+                with st.spinner("Finding relevant websites..."):
+                    websites_payload = {
+                        "model": "sonar",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": f"List 5-7 authoritative and educational websites to learn more about {topic}. For each website, provide the name, URL, and a brief description of why it's valuable. Format as: Website Name - URL - Description"
+                            }
+                        ],
+                        "max_tokens": 800,
+                        "temperature": 0.7,
+                        "return_citations": True
+                    }
+                    
+                    response = requests.post(API_URL, headers=headers, json=websites_payload)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        websites = data.get("choices", [{}])[0].get("message", {}).get("content", "No websites available.")
+                        st.write(websites)
+                    else:
+                        st.error(f"Error fetching websites: {response.status_code}")
                 
-                # Check if request was successful
-                if response.status_code == 200:
-                    result = response.json()
-                    # Display the response
-                    st.success("Response received!")
-                    st.subheader("Perplexity AI Response:")
-                    content = result["choices"][0]["message"]["content"]
-                    content = re.sub(r'\[\d+\]', '', content)
-                    st.write(content)
-                else:
-                    st.error(f"Error: API returned status code {response.status_code}")
-                    st.write(response.text)
+                # Request for YouTube channels
+                st.subheader("📺 YouTube Channel Recommendations")
+                with st.spinner("Finding relevant YouTube channels..."):
+                    youtube_payload = {
+                        "model": "sonar",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": f"Recommend 5-7 popular and educational YouTube channels about {topic}. For each channel, provide the channel name, approximate subscriber count, and a brief description of their content. Format as: Channel Name - Subscribers - Description"
+                            }
+                        ],
+                        "max_tokens": 800,
+                        "temperature": 0.7
+                    }
+                    
+                    response = requests.post(API_URL, headers=headers, json=youtube_payload)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        youtube_channels = data.get("choices", [{}])[0].get("message", {}).get("content", "No YouTube channels available.")
+                        st.write(youtube_channels)
+                    else:
+                        st.error(f"Error fetching YouTube channels: {response.status_code}")
+                
+                st.success("✅ Research complete! Check out the information above.")
+                
+            except requests.exceptions.RequestException as e:
+                st.error(f"❌ Network error: {str(e)}")
+            except json.JSONDecodeError as e:
+                st.error(f"❌ Error parsing response: {str(e)}")
             except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
+                st.error(f"❌ An unexpected error occurred: {str(e)}")
 
-# URL Summarizer, Rewriter & Improver
-st.header("URL Summarizer, Rewriter & Improver")
-
-# URL input box
-url_input = st.text_input("Enter URL:", placeholder="Paste URL here...", key="url_input")
-
-# Display the pasted URL
-if url_input:
-    st.write(f"**URL:** {url_input}")
-
-# Create three buttons in columns
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    rewrite_button = st.button("Rewrite")
-
-with col2:
-    summarize_button = st.button("Summarize")
-
-with col3:
-    improve_button = st.button("Improvement")
-
-# Function to extract text from URL
-def extract_text_from_url(url):
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Extract text from <p> tags only
-        paragraphs = soup.find_all('p')
-        text = ' '.join([p.get_text() for p in paragraphs])
-        
-        # Limit to 5000 characters
-        text = text[:5000]
-        return text
-    except Exception as e:
-        return None
-
-# Function to call Perplexity AI
-def call_perplexity_ai(prompt):
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "model": "sonar",
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    }
-    
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload)
-        if response.status_code == 200:
-            result = response.json()
-            content = result["choices"][0]["message"]["content"]
-            # Clean [number] references with regex
-            content = re.sub(r'\[\d+\]', '', content)
-            return content
-        else:
-            return None
-    except Exception as e:
-        return None
-
-# Handle Rewrite button
-if rewrite_button:
-    if url_input:
-        with st.spinner("Fetching and rewriting content..."):
-            original_text = extract_text_from_url(url_input)
-            if original_text:
-                rewritten_text = call_perplexity_ai(f"Rewrite the following text in a different style while maintaining the same meaning:\n\n{original_text}")
-                
-                if rewritten_text:
-                    col_before, col_after = st.columns(2)
-                    
-                    with col_before:
-                        st.subheader("Before")
-                        st.write(original_text)
-                    
-                    with col_after:
-                        st.subheader("After")
-                        st.write(rewritten_text)
-                else:
-                    st.error("Failed to rewrite content.")
-            else:
-                st.error("Failed to extract text from URL.")
-    else:
-        st.warning("Please enter a URL first.")
-
-# Handle Summarize button
-if summarize_button:
-    if url_input:
-        with st.spinner("Fetching and summarizing content..."):
-            original_text = extract_text_from_url(url_input)
-            if original_text:
-                summary = call_perplexity_ai(f"Summarize the following text concisely:\n\n{original_text}")
-                
-                if summary:
-                    st.subheader("Article Summarization")
-                    st.write(summary)
-                else:
-                    st.error("Failed to summarize content.")
-            else:
-                st.error("Failed to extract text from URL.")
-    else:
-        st.warning("Please enter a URL first.")
-
-# Handle Improvement button
-if improve_button:
-    if url_input:
-        with st.spinner("Fetching and improving content..."):
-            original_text = extract_text_from_url(url_input)
-            if original_text:
-                improved_text = call_perplexity_ai(f"Improve the following text by enhancing clarity, grammar, and readability:\n\n{original_text}")
-                
-                if improved_text:
-                    st.subheader("Improved Article")
-                    st.write(improved_text)
-                else:
-                    st.error("Failed to improve content.")
-            else:
-                st.error("Failed to extract text from URL.")
-    else:
-        st.warning("Please enter a URL first.")
-
-st.markdown("*Powered by Perplexity AI*")
+# Footer
+st.markdown("---")
+st.markdown(
+    """
+    <div style='text-align: center; color: gray;'>
+        <small>Powered by Perplexity AI | Enter your API key to get started</small>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
