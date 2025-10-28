@@ -1,5 +1,4 @@
 import streamlit as st
-import numpy as np
 from PIL import Image
 import io
 
@@ -11,141 +10,153 @@ st.set_page_config(
 )
 
 # Title and description
-st.title("✋ Hand Gesture Recognition App")
+st.title("✋ Hand Gesture Recognition with Webcam")
 st.write("""
-Upload an image of a hand gesture, and this app will analyze and recognize the gesture.
-Supported gestures: Thumbs Up, Peace Sign, Fist, Open Palm, OK Sign
+This app uses your webcam to capture images for hand gesture recognition.
+Capture an image using the camera below, and the app will display it with a placeholder for gesture analysis.
 """)
 
-# Placeholder gesture recognition function
-def recognize_gesture(image):
-    """
-    Placeholder function for gesture recognition.
-    
-    To implement actual gesture recognition:
-    1. Use a pre-trained model (TensorFlow/PyTorch)
-    2. Or integrate with an ML/AI API like:
-       - Google Vision API
-       - AWS Rekognition
-       - Azure Computer Vision
-       - Roboflow API
-       - Custom trained model (MediaPipe Hands + classifier)
-    
-    Example with API:
-    ```python
-    import requests
-    
-    # Convert image to bytes
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='PNG')
-    img_byte_arr = img_byte_arr.getvalue()
-    
-    # Call API
-    response = requests.post(
-        'https://api.example.com/gesture-recognition',
-        headers={'Authorization': 'Bearer YOUR_API_KEY'},
-        files={'image': img_byte_arr}
-    )
-    result = response.json()
-    return result['gesture'], result['confidence']
-    ```
-    """
-    
-    # Placeholder logic - returns random gesture for demonstration
-    import random
-    
-    gestures = [
-        "Thumbs Up 👍",
-        "Peace Sign ✌️",
-        "Fist ✊",
-        "Open Palm 🖐️",
-        "OK Sign 👌"
-    ]
-    
-    # Simulate prediction with random confidence
-    predicted_gesture = random.choice(gestures)
-    confidence = round(random.uniform(0.75, 0.99), 2)
-    
-    return predicted_gesture, confidence
+st.divider()
 
-# File uploader
-st.subheader("Upload Hand Gesture Image")
-uploaded_file = st.file_uploader(
-    "Choose an image file",
-    type=["jpg", "jpeg", "png"],
-    help="Upload a clear image of a hand gesture"
-)
+# Instructions
+st.header("📸 Webcam Capture")
+st.info("""
+**How to use:**
+1. Click the camera button below to activate your webcam
+2. Position your hand in the frame
+3. Take a photo by clicking the capture button
+4. The captured image will be displayed below with gesture analysis
+""")
 
-# Display uploaded image
-if uploaded_file is not None:
-    # Read and display image
-    image = Image.open(uploaded_file)
+# Camera input (works in cloud/browser environments)
+camera_image = st.camera_input("Take a picture of your hand gesture")
+
+if camera_image is not None:
+    # Display the captured image
+    st.success("✅ Image captured successfully!")
     
-    col1, col2 = st.columns([1, 1])
+    # Convert bytes to PIL Image for processing
+    image = Image.open(camera_image)
+    
+    # Create two columns for layout
+    col1, col2 = st.columns(2)
     
     with col1:
-        st.image(image, caption="Uploaded Image", use_container_width=True)
+        st.subheader("📷 Captured Image")
+        st.image(image, use_container_width=True)
     
     with col2:
-        st.subheader("Recognition Results")
+        st.subheader("🤖 Gesture Analysis")
         
-        # Analyze button
-        if st.button("🔍 Analyze Gesture", type="primary", use_container_width=True):
-            with st.spinner("Analyzing gesture..."):
-                # Perform gesture recognition
-                gesture, confidence = recognize_gesture(image)
-                
-                # Display results
-                st.success("Analysis Complete!")
-                st.metric(label="Detected Gesture", value=gesture)
-                st.metric(label="Confidence", value=f"{confidence * 100:.1f}%")
-                
-                # Additional information
-                st.info("""
-                **Note:** This is a placeholder implementation.
-                For production use, integrate a trained ML model or API service.
-                """)
+        # Placeholder for hand gesture recognition
+        st.warning("🔄 Gesture recognition module not yet implemented")
+        
+        # Display image properties
+        st.write(f"**Image dimensions:** {image.size[0]} x {image.size[1]} pixels")
+        st.write(f"**Image format:** {image.format}")
+        st.write(f"**Image mode:** {image.mode}")
+        
+        # Placeholder results
+        st.write("---")
+        st.write("**Placeholder Detection Results:**")
+        st.write("- 👋 Gesture: *To be detected*")
+        st.write("- 🎯 Confidence: *N/A*")
+        st.write("- 📍 Hand position: *To be analyzed*")
+    
+    st.divider()
+    
+    # Instructions for implementing real gesture recognition
+    with st.expander("🔧 How to Implement Real Gesture Recognition"):
+        st.markdown("""
+        ### Options for Adding Hand Gesture Recognition:
+        
+        #### Option 1: MediaPipe + Custom Classifier
+        ```python
+        import mediapipe as mp
+        import cv2
+        import numpy as np
+        
+        # Initialize MediaPipe Hands
+        mp_hands = mp.solutions.hands
+        hands = mp_hands.Hands(
+            static_image_mode=True,
+            max_num_hands=2,
+            min_detection_confidence=0.5
+        )
+        
+        # Process image
+        image_rgb = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
+        results = hands.process(image_rgb)
+        
+        if results.multi_hand_landmarks:
+            # Extract landmarks and classify gesture
+            for hand_landmarks in results.multi_hand_landmarks:
+                # Add your gesture classification logic here
+                pass
+        ```
+        
+        #### Option 2: Pre-trained Deep Learning Model
+        ```python
+        import tensorflow as tf
+        # or import torch for PyTorch
+        
+        # Load your trained model
+        model = tf.keras.models.load_model('gesture_model.h5')
+        
+        # Preprocess image
+        img_array = preprocess_image(image)
+        
+        # Make prediction
+        prediction = model.predict(img_array)
+        gesture = decode_prediction(prediction)
+        ```
+        
+        #### Option 3: Cloud AI APIs
+        ```python
+        # Google Vision API
+        from google.cloud import vision
+        client = vision.ImageAnnotatorClient()
+        
+        # AWS Rekognition
+        import boto3
+        rekognition = boto3.client('rekognition')
+        
+        # Azure Computer Vision
+        from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+        ```
+        
+        #### Option 4: OpenCV + Contour Analysis
+        ```python
+        import cv2
+        import numpy as np
+        
+        # Convert to grayscale and threshold
+        gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+        _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+        
+        # Find contours
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        # Analyze hand shape using contours and convex hull
+        # Calculate convexity defects for finger counting
+        ```
+        
+        ### Required Dependencies:
+        Add to `requirements.txt`:
+        ```
+        streamlit
+        Pillow
+        opencv-python
+        mediapipe
+        tensorflow  # or pytorch
+        numpy
+        ```
+        
+        ### Recommended Approach:
+        1. **Start with MediaPipe Hands** - Best for real-time hand tracking and landmark detection
+        2. **Train a classifier** on the landmarks for specific gestures (thumbs up, peace, fist, etc.)
+        3. **Use TensorFlow/PyTorch** for more complex gesture recognition
+        4. **Consider cloud APIs** for production-ready solutions without training
+        """)
 else:
-    st.info("👆 Please upload an image to get started")
-
-# Sidebar with instructions
-with st.sidebar:
-    st.header("Instructions")
-    st.write("""
-    1. Upload a hand gesture image
-    2. Click 'Analyze Gesture' button
-    3. View the recognition results
-    """)
-    
-    st.header("Implementation Guide")
-    st.write("""
-    **To add real gesture recognition:**
-    
-    **Option 1: Pre-trained Model**
-    - Use MediaPipe Hands for landmark detection
-    - Train a classifier on hand landmarks
-    - Load model in the app
-    
-    **Option 2: Cloud APIs**
-    - Google Vision API
-    - AWS Rekognition
-    - Azure Computer Vision
-    - Custom API endpoint
-    
-    **Option 3: Deep Learning**
-    - Use TensorFlow/PyTorch
-    - Load pre-trained CNN model
-    - Process image and predict
-    """)
-    
-    st.header("Requirements")
-    st.code("""
-streamlit
-Pillow
-numpy
-# Add based on chosen approach:
-# mediapipe
-# tensorflow
-# torch
-# requests (for API calls)
-    """, language="text")
+    st.info("👆 Click the camera button above to start capturing images")
