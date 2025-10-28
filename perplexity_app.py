@@ -25,7 +25,7 @@ if st.button("Submit Query"):
                 }
                 
                 payload = {
-                    "model": "sonar-small-online",
+                    "model": "sonar",
                     "messages": [
                         {
                             "role": "user",
