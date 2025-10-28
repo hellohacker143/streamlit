@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import json
+import re
 
 # Set page title
 st.title("Perplexity AI Query App")
@@ -43,7 +44,9 @@ if st.button("Submit Query"):
                     # Display the response
                     st.success("Response received!")
                     st.subheader("Perplexity AI Response:")
-                    st.write(result["choices"][0]["message"]["content"])
+                    content = result["choices"][0]["message"]["content"]
+                    content = re.sub(r'\[\d+\]', '', content)
+                    st.write(content)
                 else:
                     st.error(f"Error: API returned status code {response.status_code}")
                     st.write(response.text)
