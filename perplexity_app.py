@@ -1,40 +1,29 @@
 import streamlit as st
 import requests
 
-st.title("Blog Generator")
+# Replace with your actual Perplexity API key
+API_KEY = "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"
 
-topic = st.text_input("Enter Blog Topic:")
+API_URL = "https://api.perplexity.ai/v1/ask"
 
-if st.button("Generate Blog"):
-    if topic:
-        with st.spinner("Generating your blog..."):
-            try:
-                response = requests.post(
-                    "https://api.perplexity.ai/chat/completions",
-                    headers={
-                        "Authorization": "Bearer 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",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "llama-3.1-sonar-small-128k-online",
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": f"Write a 400-word blog post about: {topic}"
-                            }
-                        ]
-                    }
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    blog_content = result["choices"][0]["message"]["content"]
-                    st.subheader("Generated Blog:")
-                    st.write(blog_content)
-                else:
-                    st.error(f"API Error: Status {response.status_code} - {response.text}")
-                    
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
+def ask_perplexity(question):
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    payload = {"question": question}
+    response = requests.post(API_URL, json=payload, headers=headers)
+    if response.status_code == 200:
+        result = response.json()
+        return result.get("answer", "No answer found.")
     else:
-        st.warning("Please enter a topic")
+        return f"Error: {response.status_code} - {response.text}"
+
+def main():
+    st.title("Simple Perplexity API Chat with Streamlit")
+    user_input = st.text_input("Ask something:")
+    if user_input:
+        with st.spinner('Getting response...'):
+            answer = ask_perplexity(user_input)
+        st.markdown("### Response:")
+        st.write(answer)
+
+if __name__ == "__main__":
+    main()
