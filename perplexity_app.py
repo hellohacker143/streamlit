@@ -1,32 +1,40 @@
 import streamlit as st
 import requests
-import re
 
 st.title("Blog Generator")
 
-topic = st.text_input("Blog Topic")
+topic = st.text_input("Enter Blog Topic:")
 
 if st.button("Generate Blog"):
     if topic:
-        with st.spinner("Generating..."):
-            response = requests.post(
-                "https://api.perplexity.ai/chat/completions",
-                headers={
-                    "Authorization": "Bearer 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",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "sonar",
-                    "messages": [{"role": "user", "content": f"Write a 400-word blog post about: {topic}"}],
-                    "max_tokens": 800
-                }
-            )
-            
-            if response.status_code == 200:
-                content = response.json()["choices"][0]["message"]["content"]
-                content = re.sub(r'\[\d+\]', '', content)
-                st.write(content)
-            else:
-                st.error("Error generating blog")
+        with st.spinner("Generating your blog..."):
+            try:
+                response = requests.post(
+                    "https://api.perplexity.ai/chat/completions",
+                    headers={
+                        "Authorization": "Bearer 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",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "llama-3.1-sonar-small-128k-online",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": f"Write a 400-word blog post about: {topic}"
+                            }
+                        ]
+                    }
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    blog_content = result["choices"][0]["message"]["content"]
+                    st.subheader("Generated Blog:")
+                    st.write(blog_content)
+                else:
+                    st.error(f"API Error: Status {response.status_code} - {response.text}")
+                    
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
     else:
         st.warning("Please enter a topic")
